@@ -1,0 +1,109 @@
+- name: Configure the server and release the store with no downtime
+  hosts: web
+  become: true
+  vars:
+    project_dir: /opt/shop
+    app_version: "{{ lookup('ansible.builtin.env', 'APP_VERSION') | default('dev', true) }}"
+    bad_release: "{{ lookup('ansible.builtin.env', 'BAD_RELEASE') | default('none', true) }}"
+  tasks:
+    - name: Install Docker and Compose
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Ensure Docker is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create the project directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ project_dir }}"
+        - "{{ project_dir }}/nginx/upstream"
+
+    - name: Copy the app source
+      ansible.builtin.copy:
+        src: ../app/
+        dest: "{{ project_dir }}/app/"
+        mode: "0644"
+        directory_mode: "0755"
+
+    - name: Copy the release scripts
+      ansible.builtin.copy:
+        src: ../scripts/
+        dest: "{{ project_dir }}/scripts/"
+        mode: "0755"
+        directory_mode: "0755"
+
+    - name: Copy the Compose file
+      ansible.builtin.copy:
+        src: ../docker-compose.yml
+        dest: "{{ project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Copy the nginx configuration
+      ansible.builtin.copy:
+        src: ../nginx/conf.d/
+        dest: "{{ project_dir }}/nginx/conf.d/"
+        mode: "0644"
+        directory_mode: "0755"
+
+    - name: Copy the monitoring configuration
+      ansible.builtin.copy:
+        src: ../monitoring/
+        dest: "{{ project_dir }}/monitoring/"
+        mode: "0644"
+        directory_mode: "0755"
+      register: monitoring_config
+
+    - name: Write the Compose environment file
+      ansible.builtin.copy:
+        dest: "{{ project_dir }}/.env"
+        content: "GRAFANA_ADMIN_PASSWORD={{ grafana_admin_password }}\n"
+        mode: "0600"
+      no_log: true
+
+    # force: false, because deploy.sh owns this file after the first run.
+    - name: Create the release state file
+      ansible.builtin.copy:
+        dest: "{{ project_dir }}/release.env"
+        content: "BLUE_VERSION=none\nGREEN_VERSION=none\n"
+        mode: "0644"
+        force: false
+
+    - name: Start the monitoring stack
+      ansible.builtin.command:
+        cmd: docker compose --env-file .env --env-file release.env up --detach prometheus node-exporter grafana
+        chdir: "{{ project_dir }}"
+      register: monitoring_up
+      changed_when: monitoring_up.stderr is search('Recreate|Started|Created')
+
+    # Compose doesn't notice changes inside bind-mounted config files.
+    - name: Restart monitoring if its configuration changed
+      ansible.builtin.command:
+        cmd: docker compose --env-file .env --env-file release.env restart prometheus grafana
+        chdir: "{{ project_dir }}"
+      when: monitoring_config.changed
+
+    - name: Release with blue-green deployment
+      ansible.builtin.command:
+        argv:
+          - "{{ project_dir }}/scripts/deploy.sh"
+          - deploy
+          - "{{ app_version }}"
+          - "{{ bad_release }}"
+      register: release
+      changed_when: true
+
+    - name: Show the release log
+      ansible.builtin.debug:
+        var: release.stdout_lines

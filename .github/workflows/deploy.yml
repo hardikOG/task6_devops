@@ -1,0 +1,85 @@
+name: Test, build and release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      bad_release:
+        description: Inject a fault to demonstrate automatic rollback
+        type: choice
+        default: none
+        options: [none, unhealthy, late]
+
+# Two releases at once could fight over which color is live.
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r app/requirements.txt pytest==8.2.2
+      - run: pytest
+        working-directory: app
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag shop:${{ github.sha }} app
+
+  release:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      APP_VERSION: ${{ github.sha }}
+      BAD_RELEASE: ${{ inputs.bad_release || 'none' }}
+      ANSIBLE_CONFIG: ./ansible.cfg
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+    steps:
+      - name: Check required secrets
+        run: |
+          missing=0
+          for name in EC2_HOST EC2_SSH_KEY GRAFANA_ADMIN_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository secret $name is not set"
+              missing=1
+            fi
+          done
+          exit "$missing"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ansible-core==2.17.5
+      - name: Configure SSH access
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/shop-key
+          chmod 600 ~/.ssh/shop-key
+          if ! ssh-keygen -y -f ~/.ssh/shop-key > /dev/null; then
+            echo "::error::Secret EC2_SSH_KEY is not a valid private key"
+            exit 1
+          fi
+          echo "::notice::EC2_SSH_KEY fingerprint: $(ssh-keygen -lf ~/.ssh/shop-key | cut -d' ' -f2)"
+          printf '[web]\n%s ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/shop-key\n' "$EC2_HOST" > ansible/inventory.ini
+      - name: Release with blue-green deployment
+        working-directory: ansible
+        # Passed as a JSON file, so the password can't be split or exposed on the command line.
+        run: |
+          umask 077
+          jq -n --arg password "$GRAFANA_ADMIN_PASSWORD" '{grafana_admin_password: $password}' > /tmp/deploy-vars.json
+          ansible-playbook playbook.yml --extra-vars @/tmp/deploy-vars.json
+      - name: Confirm the release is live from outside
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 5 --retry-all-errors "http://$EC2_HOST/health" | grep "$APP_VERSION"

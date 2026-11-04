@@ -1,0 +1,9 @@
+.terraform/
+*.tfstate*
+ansible/id_ed25519
+ansible/inventory.ini
+ansible/group_vars/
+.env
+__pycache__/
+.pytest_cache/
+.venv/

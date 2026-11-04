@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hardik's Store</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+    header, main, footer { max-width: 960px; margin: 0 auto; padding: 16px; }
+    header { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 1.5rem; }
+    .release { font-size: .8rem; padding: 4px 10px; border-radius: 999px; background: #1e293b; overflow-wrap: anywhere; }
+    .release b { color: {{ '#60a5fa' if color == 'blue' else '#4ade80' }}; }
+    .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .product, .cart { background: #1e293b; border-radius: 12px; padding: 16px; }
+    .product h2 { margin: 0 0 8px; font-size: 1rem; }
+    button { margin-top: 8px; padding: 8px 12px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; cursor: pointer; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    .cart { margin-top: 16px; }
+    footer { color: #94a3b8; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Hardik's Store</h1>
+    <span class="release">Serving from <b>{{ color }}</b> &middot; {{ version[:12] }}</span>
+  </header>
+  <main>
+    <div class="products" id="products">Loading products...</div>
+    <section class="cart">
+      <h2>Cart</h2>
+      <p id="summary">Your cart is empty.</p>
+      <button id="checkout" disabled>Place order</button>
+      <p id="result" role="status"></p>
+    </section>
+  </main>
+  <footer>Demo store by Hardik Grover. No real payments or orders.</footer>
+  <script>
+    const cart = new Map();
+    const money = (rupees) => "₹" + rupees.toLocaleString("en-IN");
+    const summary = document.getElementById("summary");
+    const checkout = document.getElementById("checkout");
+    const result = document.getElementById("result");
+    let priceById = new Map();
+
+    function renderCart() {
+      let count = 0, total = 0;
+      cart.forEach((quantity, id) => { count += quantity; total += quantity * priceById.get(id); });
+      summary.textContent = count ? `${count} item(s), total ${money(total)}` : "Your cart is empty.";
+      checkout.disabled = count === 0;
+    }
+
+    fetch("/api/products").then((response) => {
+      if (!response.ok) throw new Error("catalog request failed");
+      return response.json();
+    }).then(({ products }) => {
+      priceById = new Map(products.map((product) => [product.id, product.price]));
+      const list = document.getElementById("products");
+      list.replaceChildren(...products.map((product) => {
+        const card = document.createElement("article");
+        card.className = "product";
+        const name = document.createElement("h2");
+        name.textContent = product.name;
+        const price = document.createElement("div");
+        price.textContent = money(product.price);
+        const add = document.createElement("button");
+        add.textContent = "Add to cart";
+        add.addEventListener("click", () => {
+          cart.set(product.id, (cart.get(product.id) || 0) + 1);
+          result.textContent = "";
+          renderCart();
+        });
+        card.append(name, price, add);
+        return card;
+      }));
+    }).catch(() => {
+      document.getElementById("products").textContent = "Products are unavailable right now.";
+    });
+
+    checkout.addEventListener("click", async () => {
+      const items = [...cart].map(([id, quantity]) => ({ id, quantity }));
+      try {
+        const response = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items }),
+        });
+        if (!response.ok) throw new Error("order rejected");
+        const order = await response.json();
+        result.textContent = `Order confirmed: ${order.order_id.slice(0, 8)}, total ${money(order.total)}`;
+        cart.clear();
+        renderCart();
+      } catch {
+        result.textContent = "Your order could not be placed. Please try again.";
+      }
+    });
+  </script>
+</body>
+</html>

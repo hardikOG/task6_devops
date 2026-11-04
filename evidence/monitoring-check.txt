@@ -1,0 +1,32 @@
+== checked at 2026-11-04T06:38:17Z against 18.209.217.175
+== prometheus targets
+node node-exporter:9100 up
+prometheus localhost:9090 up
+shop app-blue:8000 up
+shop app-green:8000 up
+== alert rules
+HostHighCpu ok inactive
+HostLowDisk ok inactive
+ShopDown ok inactive
+HighErrorRate ok inactive
+HighLatency ok inactive
+== running releases, from Prometheus
+blue v1.0.0
+green v1.4.0
+== requests the bad late release served with errors, from Prometheus
+no series (the instance that served them has since been replaced)
+== grafana
+login -> 200
+dashboards: ['Shop Releases']
+== metrics are private through nginx
+GET /metrics -> 404
+== host
+               total        used        free      shared  buff/cache   available
+Mem:            1905         684         203           3        1219        1221
+/dev/root        15G  3.9G   11G  27% /
+shop-app-green-1 33.87MiB / 1.861GiB
+shop-app-blue-1 34.37MiB / 1.861GiB
+shop-nginx-1 3.246MiB / 1.861GiB
+shop-prometheus-1 27.14MiB / 1.861GiB
+shop-grafana-1 38.85MiB / 1.861GiB
+shop-node-exporter-1 20.12MiB / 1.861GiB

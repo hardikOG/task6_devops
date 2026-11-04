@@ -1,0 +1,332 @@
+Release scenarios against 18.209.217.175, started 2026-11-04T06:29:00Z
+
+==================================================
+SCENARIO: good release
+command: deploy.sh deploy v1.1.0   (expected exit: 0)
+before: {"color":"blue","status":"ok","version":"v1.0.0"}
+[deploy] START version=v1.1.0 target=green active=blue bad_release=none
+[deploy] app-green health: starting
+[deploy] app-green health: starting
+[deploy] app-green health: healthy
+Smoke test passed for v1.1.0
+[deploy] SWITCHED version=v1.1.0 traffic-on=green
+[deploy] post-switch check failed (1 of 3 allowed)
+[deploy] SUCCESS version=v1.1.0 traffic-on=green
+deploy exit: 0
+result: AS EXPECTED
+after: {"color":"green","status":"ok","version":"v1.1.0"}
+--- traffic from inside the server (20 requests per second)
+{
+  "url": "http://localhost/api/products",
+  "duration_s": 100.0,
+  "requests": 1991,
+  "failed": 0,
+  "outcomes": {
+    "200": 1991
+  },
+  "slowest_response_s": 0.086,
+  "served_by": {
+    "blue/v1.0.0": {
+      "first_s": 0.0,
+      "requests": 231,
+      "last_s": 11.6
+    },
+    "green/v1.1.0": {
+      "first_s": 11.6,
+      "requests": 1760,
+      "last_s": 100.0
+    }
+  }
+}
+--- traffic from the laptop over the internet (5 requests per second)
+{
+  "url": "http://18.209.217.175/api/products",
+  "duration_s": 100.5,
+  "requests": 208,
+  "failed": 0,
+  "outcomes": {
+    "200": 208
+  },
+  "slowest_response_s": 1.504,
+  "served_by": {
+    "blue/v1.0.0": {
+      "first_s": 0.0,
+      "requests": 31,
+      "last_s": 14.2
+    },
+    "green/v1.1.0": {
+      "first_s": 14.7,
+      "requests": 177,
+      "last_s": 100.0
+    }
+  }
+}
+
+==================================================
+SCENARIO: bad release: unhealthy from the start
+command: deploy.sh deploy v1.2.0-bad-unhealthy unhealthy   (expected exit: 1)
+before: {"color":"green","status":"ok","version":"v1.1.0"}
+[deploy] START version=v1.2.0-bad-unhealthy target=blue active=green bad_release=unhealthy
+[deploy] app-blue health: starting
+[deploy] app-blue health: starting
+[deploy] app-blue health: starting
+[deploy] app-blue health: starting
+[deploy] app-blue health: starting
+[deploy] app-blue health: starting
+[deploy] app-blue health: unhealthy
+[deploy] REJECTED version=v1.2.0-bad-unhealthy reason=failed-pre-switch-checks traffic-stayed-on=green
+deploy exit: 1
+result: AS EXPECTED
+after: {"color":"green","status":"ok","version":"v1.1.0"}
+--- traffic from inside the server (20 requests per second)
+{
+  "url": "http://localhost/api/products",
+  "duration_s": 100.0,
+  "requests": 1992,
+  "failed": 0,
+  "outcomes": {
+    "200": 1992
+  },
+  "slowest_response_s": 0.065,
+  "served_by": {
+    "green/v1.1.0": {
+      "first_s": 0.0,
+      "requests": 1992,
+      "last_s": 100.0
+    }
+  }
+}
+--- traffic from the laptop over the internet (5 requests per second)
+{
+  "url": "http://18.209.217.175/api/products",
+  "duration_s": 100.2,
+  "requests": 212,
+  "failed": 0,
+  "outcomes": {
+    "200": 212
+  },
+  "slowest_response_s": 0.511,
+  "served_by": {
+    "green/v1.1.0": {
+      "first_s": 0.0,
+      "requests": 212,
+      "last_s": 99.7
+    }
+  }
+}
+
+==================================================
+SCENARIO: bad release: fails only after it goes live
+command: deploy.sh deploy v1.3.0-bad-late late   (expected exit: 1)
+before: {"color":"green","status":"ok","version":"v1.1.0"}
+[deploy] START version=v1.3.0-bad-late target=blue active=green bad_release=late
+[deploy] app-blue health: starting
+[deploy] app-blue health: starting
+[deploy] app-blue health: healthy
+Smoke test passed for v1.3.0-bad-late
+[deploy] SWITCHED version=v1.3.0-bad-late traffic-on=blue
+[deploy] post-switch check failed (1 of 3 allowed)
+[deploy] post-switch check failed (2 of 3 allowed)
+[deploy] post-switch check failed (3 of 3 allowed)
+[deploy] ROLLED_BACK version=v1.3.0-bad-late reason=failed-post-switch-checks traffic-on=green
+deploy exit: 1
+result: AS EXPECTED
+after: {"color":"green","status":"ok","version":"v1.1.0"}
+--- traffic from inside the server (20 requests per second)
+{
+  "url": "http://localhost/api/products",
+  "duration_s": 100.0,
+  "requests": 1993,
+  "failed": 43,
+  "outcomes": {
+    "200": 1950,
+    "500": 43
+  },
+  "slowest_response_s": 0.063,
+  "served_by": {
+    "green/v1.1.0": {
+      "first_s": 0.0,
+      "requests": 1942,
+      "last_s": 100.0
+    },
+    "blue/v1.3.0-bad-l": {
+      "first_s": 13.0,
+      "requests": 51,
+      "last_s": 15.5
+    }
+  }
+}
+--- traffic from the laptop over the internet (5 requests per second)
+{
+  "url": "http://18.209.217.175/api/products",
+  "duration_s": 100.3,
+  "requests": 212,
+  "failed": 5,
+  "outcomes": {
+    "200": 207,
+    "500": 5
+  },
+  "slowest_response_s": 0.536,
+  "served_by": {
+    "green/v1.1.0": {
+      "first_s": 0.0,
+      "requests": 206,
+      "last_s": 99.8
+    },
+    "blue/v1.3.0-bad-l": {
+      "first_s": 16.1,
+      "requests": 6,
+      "last_s": 18.4
+    }
+  }
+}
+
+==================================================
+SCENARIO: manual rollback
+command: deploy.sh rollback   (expected exit: 0)
+before: {"color":"green","status":"ok","version":"v1.1.0"}
+[deploy] MANUAL_ROLLBACK_START version=v1.0.0 target=blue
+[deploy] app-blue health: healthy
+Smoke test passed for v1.0.0
+[deploy] MANUAL_ROLLBACK_DONE version=v1.0.0 traffic-on=blue
+deploy exit: 0
+result: AS EXPECTED
+after: {"color":"blue","status":"ok","version":"v1.0.0"}
+--- traffic from inside the server (20 requests per second)
+{
+  "url": "http://localhost/api/products",
+  "duration_s": 100.0,
+  "requests": 1993,
+  "failed": 0,
+  "outcomes": {
+    "200": 1993
+  },
+  "slowest_response_s": 0.07,
+  "served_by": {
+    "green/v1.1.0": {
+      "first_s": 0.0,
+      "requests": 18,
+      "last_s": 0.9
+    },
+    "blue/v1.0.0": {
+      "first_s": 0.9,
+      "requests": 1975,
+      "last_s": 100.0
+    }
+  }
+}
+--- traffic from the laptop over the internet (5 requests per second)
+{
+  "url": "http://18.209.217.175/api/products",
+  "duration_s": 100.2,
+  "requests": 213,
+  "failed": 0,
+  "outcomes": {
+    "200": 213
+  },
+  "slowest_response_s": 0.508,
+  "served_by": {
+    "green/v1.1.0": {
+      "first_s": 0.0,
+      "requests": 9,
+      "last_s": 3.7
+    },
+    "blue/v1.0.0": {
+      "first_s": 4.2,
+      "requests": 204,
+      "last_s": 99.8
+    }
+  }
+}
+
+==================================================
+SCENARIO: good release after the failures
+command: deploy.sh deploy v1.4.0   (expected exit: 0)
+before: {"color":"blue","status":"ok","version":"v1.0.0"}
+[deploy] START version=v1.4.0 target=green active=blue bad_release=none
+[deploy] app-green health: starting
+[deploy] app-green health: starting
+[deploy] app-green health: healthy
+Smoke test passed for v1.4.0
+[deploy] SWITCHED version=v1.4.0 traffic-on=green
+[deploy] post-switch check failed (1 of 3 allowed)
+[deploy] SUCCESS version=v1.4.0 traffic-on=green
+deploy exit: 0
+result: AS EXPECTED
+after: {"color":"green","status":"ok","version":"v1.4.0"}
+--- traffic from inside the server (20 requests per second)
+{
+  "url": "http://localhost/api/products",
+  "duration_s": 100.0,
+  "requests": 1994,
+  "failed": 0,
+  "outcomes": {
+    "200": 1994
+  },
+  "slowest_response_s": 0.059,
+  "served_by": {
+    "blue/v1.0.0": {
+      "first_s": 0.0,
+      "requests": 250,
+      "last_s": 12.5
+    },
+    "green/v1.4.0": {
+      "first_s": 12.6,
+      "requests": 1744,
+      "last_s": 100.0
+    }
+  }
+}
+--- traffic from the laptop over the internet (5 requests per second)
+{
+  "url": "http://18.209.217.175/api/products",
+  "duration_s": 100.3,
+  "requests": 212,
+  "failed": 0,
+  "outcomes": {
+    "200": 212
+  },
+  "slowest_response_s": 0.61,
+  "served_by": {
+    "blue/v1.0.0": {
+      "first_s": 0.0,
+      "requests": 34,
+      "last_s": 15.6
+    },
+    "green/v1.4.0": {
+      "first_s": 16.1,
+      "requests": 178,
+      "last_s": 99.8
+    }
+  }
+}
+
+==================================================
+FINAL STATE
+active: green
+blue:   v1.0.0
+green:  v1.4.0
+app-blue: Up 4 minutes (healthy)
+app-green: Up About a minute (healthy)
+grafana: Up 10 minutes
+nginx: Up 9 minutes
+node-exporter: Up 10 minutes
+prometheus: Up 10 minutes
+live:   {"color":"green","status":"ok","version":"v1.4.0"}
+--- deploy history
+2026-11-04T06:27:35Z START version=v1.0.0 target=blue active=none bad_release=none
+2026-11-04T06:28:02Z SWITCHED version=v1.0.0 traffic-on=blue
+2026-11-04T06:28:33Z SUCCESS version=v1.0.0 traffic-on=blue
+2026-11-04T06:29:05Z START version=v1.1.0 target=green active=blue bad_release=none
+2026-11-04T06:29:16Z SWITCHED version=v1.1.0 traffic-on=green
+2026-11-04T06:29:47Z SUCCESS version=v1.1.0 traffic-on=green
+2026-11-04T06:30:49Z START version=v1.2.0-bad-unhealthy target=blue active=green bad_release=unhealthy
+2026-11-04T06:31:15Z REJECTED version=v1.2.0-bad-unhealthy reason=failed-pre-switch-checks traffic-stayed-on=green
+2026-11-04T06:32:34Z START version=v1.3.0-bad-late target=blue active=green bad_release=late
+2026-11-04T06:32:47Z SWITCHED version=v1.3.0-bad-late traffic-on=blue
+2026-11-04T06:32:51Z ROLLED_BACK version=v1.3.0-bad-late reason=failed-post-switch-checks traffic-on=green
+2026-11-04T06:34:18Z MANUAL_ROLLBACK_START version=v1.0.0 target=blue
+2026-11-04T06:34:19Z MANUAL_ROLLBACK_DONE version=v1.0.0 traffic-on=blue
+2026-11-04T06:36:04Z START version=v1.4.0 target=green active=blue bad_release=none
+2026-11-04T06:36:16Z SWITCHED version=v1.4.0 traffic-on=green
+2026-11-04T06:36:47Z SUCCESS version=v1.4.0 traffic-on=green

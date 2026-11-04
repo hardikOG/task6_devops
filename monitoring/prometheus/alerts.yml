@@ -1,0 +1,46 @@
+groups:
+  - name: shop
+    rules:
+      # Summed across colors, because the standby may legitimately be stopped.
+      - alert: ShopDown
+        expr: sum(up{job="shop"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Neither the blue nor the green instance is answering Prometheus scrapes
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(shop_http_requests_total{status=~"5.."}[2m]))
+            / sum(rate(shop_http_requests_total[2m])) > 0.05
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 5% of requests are returning 5xx errors
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(shop_http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 95th percentile request latency is above 500 ms
+  - name: host
+    rules:
+      - alert: HostHighCpu
+        expr: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host CPU usage has been above 85% for 5 minutes
+      - alert: HostLowDisk
+        expr: |
+          100 * node_filesystem_avail_bytes{mountpoint="/", fstype!="rootfs"}
+            / node_filesystem_size_bytes{mountpoint="/", fstype!="rootfs"} < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Less than 15% of the root disk is free

@@ -1,0 +1,171 @@
+
+PLAY [Configure the server and release the store with no downtime] *************
+
+TASK [Gathering Facts] *********************************************************
+ok: [18.209.217.175]
+
+TASK [Install Docker and Compose] **********************************************
+changed: [18.209.217.175]
+
+TASK [Ensure Docker is running] ************************************************
+ok: [18.209.217.175]
+
+TASK [Create the project directories] ******************************************
+changed: [18.209.217.175] => (item=/opt/shop)
+changed: [18.209.217.175] => (item=/opt/shop/nginx/upstream)
+
+TASK [Copy the app source] *****************************************************
+changed: [18.209.217.175]
+
+TASK [Copy the release scripts] ************************************************
+changed: [18.209.217.175]
+
+TASK [Copy the Compose file] ***************************************************
+changed: [18.209.217.175]
+
+TASK [Copy the nginx configuration] ********************************************
+changed: [18.209.217.175]
+
+TASK [Copy the monitoring configuration] ***************************************
+changed: [18.209.217.175]
+
+TASK [Write the Compose environment file] **************************************
+changed: [18.209.217.175]
+
+TASK [Create the release state file] *******************************************
+changed: [18.209.217.175]
+
+TASK [Start the monitoring stack] **********************************************
+changed: [18.209.217.175]
+
+TASK [Restart monitoring if its configuration changed] *************************
+changed: [18.209.217.175]
+
+TASK [Release with blue-green deployment] **************************************
+changed: [18.209.217.175]
+
+TASK [Show the release log] ****************************************************
+ok: [18.209.217.175] => {
+    "release.stdout_lines": [
+        "[deploy] START version=v1.0.0 target=blue active=none bad_release=none",
+        "Sending build context to Docker daemon  20.99kB",
+        "",
+        "Step 1/15 : FROM python:3.12-slim",
+        "3.12-slim: Pulling from library/python",
+        "acca7542dfc7: Pulling fs layer",
+        "3eb771151506: Pulling fs layer",
+        "6fc242d221a6: Pulling fs layer",
+        "f574edac59d9: Pulling fs layer",
+        "3eb771151506: Download complete",
+        "acca7542dfc7: Download complete",
+        "bccc6082da9b: Download complete",
+        "f574edac59d9: Download complete",
+        "5c4e36918e20: Download complete",
+        "6fc242d221a6: Download complete",
+        "6fc242d221a6: Pull complete",
+        "3eb771151506: Pull complete",
+        "f574edac59d9: Pull complete",
+        "acca7542dfc7: Pull complete",
+        "Digest: sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30",
+        "Status: Downloaded newer image for python:3.12-slim",
+        " ---> b18b261e1b49",
+        "Step 2/15 : WORKDIR /srv",
+        " ---> Running in f15472ec2c10",
+        " ---> Removed intermediate container f15472ec2c10",
+        " ---> 9c59eeaf80a2",
+        "Step 3/15 : COPY requirements.txt .",
+        " ---> 1828e43f443c",
+        "Step 4/15 : RUN pip install --no-cache-dir -r requirements.txt",
+        " ---> Running in f084499154f3",
+        "Collecting flask==3.0.3 (from -r requirements.txt (line 1))",
+        "  Downloading flask-3.0.3-py3-none-any.whl.metadata (3.2 kB)",
+        "Collecting gunicorn==22.0.0 (from -r requirements.txt (line 2))",
+        "  Downloading gunicorn-22.0.0-py3-none-any.whl.metadata (4.4 kB)",
+        "Collecting prometheus-client==0.20.0 (from -r requirements.txt (line 3))",
+        "  Downloading prometheus_client-0.20.0-py3-none-any.whl.metadata (1.8 kB)",
+        "Collecting Werkzeug>=3.0.0 (from flask==3.0.3->-r requirements.txt (line 1))",
+        "  Downloading werkzeug-3.1.9-py3-none-any.whl.metadata (4.1 kB)",
+        "Collecting Jinja2>=3.1.2 (from flask==3.0.3->-r requirements.txt (line 1))",
+        "  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)",
+        "Collecting itsdangerous>=2.1.2 (from flask==3.0.3->-r requirements.txt (line 1))",
+        "  Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)",
+        "Collecting click>=8.1.3 (from flask==3.0.3->-r requirements.txt (line 1))",
+        "  Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)",
+        "Collecting blinker>=1.6.2 (from flask==3.0.3->-r requirements.txt (line 1))",
+        "  Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)",
+        "Collecting packaging (from gunicorn==22.0.0->-r requirements.txt (line 2))",
+        "  Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)",
+        "Collecting MarkupSafe>=2.0 (from Jinja2>=3.1.2->flask==3.0.3->-r requirements.txt (line 1))",
+        "  Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)",
+        "Downloading flask-3.0.3-py3-none-any.whl (101 kB)",
+        "Downloading gunicorn-22.0.0-py3-none-any.whl (84 kB)",
+        "Downloading prometheus_client-0.20.0-py3-none-any.whl (54 kB)",
+        "Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)",
+        "Downloading click-8.5.0-py3-none-any.whl (125 kB)",
+        "Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)",
+        "Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)",
+        "Downloading werkzeug-3.1.9-py3-none-any.whl (228 kB)",
+        "Downloading packaging-26.3-py3-none-any.whl (129 kB)",
+        "Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)",
+        "Installing collected packages: prometheus-client, packaging, MarkupSafe, itsdangerous, click, blinker, Werkzeug, Jinja2, gunicorn, flask",
+        "Successfully installed Jinja2-3.1.6 MarkupSafe-3.0.4 Werkzeug-3.1.9 blinker-1.9.0 click-8.5.0 flask-3.0.3 gunicorn-22.0.0 itsdangerous-2.2.0 packaging-26.3 prometheus-client-0.20.0",
+        "\u001b[91mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.",
+        "\u001b[0m\u001b[91m",
+        "[notice] A new release of pip is available: 25.0.1 -> 26.3",
+        "[notice] To update, run: pip install --upgrade pip",
+        "\u001b[0m ---> Removed intermediate container f084499154f3",
+        " ---> 2ef127ceb45a",
+        "Step 5/15 : COPY app.py smoke_test.py ./",
+        " ---> 2dcc7a419eb6",
+        "Step 6/15 : COPY templates ./templates",
+        " ---> 8cb8c45d8270",
+        "Step 7/15 : RUN useradd --system --no-create-home appuser",
+        " ---> Running in 1a9d0c4a767e",
+        " ---> Removed intermediate container 1a9d0c4a767e",
+        " ---> 53e79176226c",
+        "Step 8/15 : USER appuser",
+        " ---> Running in af700f8e85e8",
+        " ---> Removed intermediate container af700f8e85e8",
+        " ---> 2d4efcc892f9",
+        "Step 9/15 : ARG APP_VERSION=dev",
+        " ---> Running in 77a8859086a3",
+        " ---> Removed intermediate container 77a8859086a3",
+        " ---> fcf47a51eb07",
+        "Step 10/15 : ENV APP_VERSION=$APP_VERSION",
+        " ---> Running in b4f38bcf99ba",
+        " ---> Removed intermediate container b4f38bcf99ba",
+        " ---> 65048a9d5f55",
+        "Step 11/15 : ARG BAD_RELEASE=none",
+        " ---> Running in 116708c3fead",
+        " ---> Removed intermediate container 116708c3fead",
+        " ---> 78e27524e0ef",
+        "Step 12/15 : ENV BAD_RELEASE=$BAD_RELEASE",
+        " ---> Running in 9aba7f86b3c5",
+        " ---> Removed intermediate container 9aba7f86b3c5",
+        " ---> 14bdf0bb7482",
+        "Step 13/15 : EXPOSE 8000",
+        " ---> Running in 40c8115fa946",
+        " ---> Removed intermediate container 40c8115fa946",
+        " ---> a87ceb2965ea",
+        "Step 14/15 : HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3   CMD python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)\"",
+        " ---> Running in 6073a4f8d97c",
+        " ---> Removed intermediate container 6073a4f8d97c",
+        " ---> 596d3c75908e",
+        "Step 15/15 : CMD [\"gunicorn\", \"--bind\", \"0.0.0.0:8000\", \"--workers\", \"1\", \"--threads\", \"8\", \"--graceful-timeout\", \"30\", \"--access-logfile\", \"-\", \"app:app\"]",
+        " ---> Running in c9da3920804d",
+        " ---> Removed intermediate container c9da3920804d",
+        " ---> f4aa73eff6ea",
+        "Successfully built f4aa73eff6ea",
+        "Successfully tagged shop:v1.0.0",
+        "[deploy] app-blue health: starting",
+        "[deploy] app-blue health: starting",
+        "[deploy] app-blue health: healthy",
+        "Smoke test passed for v1.0.0",
+        "[deploy] SWITCHED version=v1.0.0 traffic-on=blue",
+        "[deploy] SUCCESS version=v1.0.0 traffic-on=blue"
+    ]
+}
+
+PLAY RECAP *********************************************************************
+18.209.217.175             : ok=15   changed=12   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
