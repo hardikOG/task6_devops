@@ -1,0 +1,48 @@
+== fault-injected pipeline release, followed from the server, 2026-11-04T07:46:02Z
+outcome: rolled-back
+live store before: {"color":"blue","status":"ok","version":"102b941ccea7402174686990a80cbab785b2d980"}
+live store after:  {"color":"blue","status":"ok","version":"102b941ccea7402174686990a80cbab785b2d980"}
+== traffic during the release, from inside the server (20 requests per second)
+{
+  "url": "http://localhost/api/products",
+  "duration_s": 240.0,
+  "requests": 4780,
+  "failed": 42,
+  "outcomes": {
+    "200": 4738,
+    "500": 42
+  },
+  "slowest_response_s": 0.096,
+  "served_by": {
+    "blue/102b941ccea7": {
+      "first_s": 0.0,
+      "requests": 4729,
+      "last_s": 240.0
+    },
+    "green/102b941ccea7": {
+      "first_s": 51.3,
+      "requests": 51,
+      "last_s": 53.8
+    }
+  }
+}
+== new deploy history
+2026-11-04T07:42:30Z START version=102b941ccea7402174686990a80cbab785b2d980-fault-late target=green active=blue bad_release=late
+2026-11-04T07:42:54Z SWITCHED version=102b941ccea7402174686990a80cbab785b2d980-fault-late traffic-on=green
+2026-11-04T07:42:57Z ROLLED_BACK version=102b941ccea7402174686990a80cbab785b2d980-fault-late reason=failed-post-switch-checks traffic-on=blue
+== state
+active: blue
+blue:   102b941ccea7402174686990a80cbab785b2d980
+green:  102b941ccea7402174686990a80cbab785b2d980
+app-blue: Up 21 minutes (healthy)
+app-green: Up 3 minutes (healthy)
+grafana: Up 44 minutes
+nginx: Up About an hour
+node-exporter: Up About an hour
+prometheus: Up About an hour
+live:   {"color":"blue","status":"ok","version":"102b941ccea7402174686990a80cbab785b2d980"}
+== images
+app-blue image shop:102b941ccea7402174686990a80cbab785b2d980 BAD_RELEASE=none
+app-green image shop:102b941ccea7402174686990a80cbab785b2d980 BAD_RELEASE=none
+102b941ccea7402174686990a80cbab785b2d980-fault-late
+102b941ccea7402174686990a80cbab785b2d980
