@@ -124,6 +124,9 @@ deploy() {
       ;;
   esac
 
+  # A faulty build of the live commit must not take over the image tag the live release restarts from.
+  [ "$bad_release" = none ] || version="$version-fault-$bad_release"
+
   active=$(active_color)
   if [ -n "$active" ]; then target=$(other_color "$active"); else target=blue; fi
   previous_target_version=$(version_of "$target")

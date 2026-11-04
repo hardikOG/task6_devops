@@ -1,0 +1,39 @@
+== pipeline run for 5925a71d5b2002255530a9f10c408f815105b1cc
+https://github.com/hardikOG/task6_devops/actions/runs/41789310309
+test success 07:00:52 07:00:59
+build success 07:01:01 07:01:12
+release success 07:01:14 07:03:06
+annotation: notice EC2_SSH_KEY fingerprint: SHA256:pmncfZ8oX1mdvMOm77kqESyuIxoXKW6UnyVkKDk4m/A
+== live store now
+{"color":"blue","status":"ok","version":"5925a71d5b2002255530a9f10c408f815105b1cc"}
+
+== traffic during the release, from inside the server (20 requests per second)
+{
+  "url": "http://localhost/api/products",
+  "duration_s": 240.0,
+  "requests": 4780,
+  "failed": 0,
+  "outcomes": {
+    "200": 4780
+  },
+  "slowest_response_s": 0.047,
+  "served_by": {
+    "green/v1.4.0": {
+      "first_s": 0.0,
+      "requests": 1942,
+      "last_s": 97.5
+    },
+    "blue/5925a71d5b20": {
+      "first_s": 97.6,
+      "requests": 2838,
+      "last_s": 240.0
+    }
+  }
+}
+== deploy history
+2026-11-04T06:36:04Z START version=v1.4.0 target=green active=blue bad_release=none
+2026-11-04T06:36:16Z SWITCHED version=v1.4.0 traffic-on=green
+2026-11-04T06:36:47Z SUCCESS version=v1.4.0 traffic-on=green
+2026-11-04T07:02:08Z START version=5925a71d5b2002255530a9f10c408f815105b1cc target=blue active=green bad_release=none
+2026-11-04T07:02:32Z SWITCHED version=5925a71d5b2002255530a9f10c408f815105b1cc traffic-on=blue
+2026-11-04T07:03:03Z SUCCESS version=5925a71d5b2002255530a9f10c408f815105b1cc traffic-on=blue
